@@ -9,14 +9,14 @@ using namespace std;
 // ---- Constants ----
 constexpr int REGISTER_COUNT = 8;
 constexpr int MEMORY_SIZE = 256;
-constexpr int WORD_SIZE = 8;            // 8-bit architecture
-constexpr int HALT_OPCODE = 0b11111111; // 0xFF in binary
+constexpr int WORD_SIZE = 8;
+constexpr int HALT_OPCODE = 0b11111111;
 
 // ========= Bit manipulation constants =======
 constexpr int OPCODE_SHIFT = 4;
-constexpr int OPCODE_MASK = 0b1111; // 4-bit opcode
+constexpr int OPCODE_MASK = 0b1111;
 constexpr int REG1_SHIFT = 2;
-constexpr int REG_MASK = 0b11; // 2-bit register selector
+constexpr int REG_MASK = 0b11;
 
 // ----- Conversion -----
 string formatBinary(int value, int bits = WORD_SIZE)
@@ -29,7 +29,7 @@ string formatBinary(int value, int bits = WORD_SIZE)
     return str;
 }
 
-// ================== I/O Device ===========
+// ================== I/O Device ==========
 class IOController
 {
     int input_buffer;
@@ -62,11 +62,10 @@ public:
 // ========== CPU Components ==========
 struct Processor
 {
-    vector<int> reg; // General-purpose registers
-    vector<int> ram; // Main memory
-    IOController io; // I/O subsystem
-    int pc;          // Program counter
-
+    vector<int> reg;
+    vector<int> ram;
+    IOController io;
+    int pc;
     size_t instructions_executed;
     chrono::high_resolution_clock::time_point clock_start;
 
@@ -111,8 +110,7 @@ private:
     {
         if (pc >= MEMORY_SIZE)
             throw runtime_error("PC overflow");
-        cout << "\n[FETCH] PC:" << pc << " -> ";
-        cout << formatBinary(ram[pc]) << endl;
+        cout << "\n[FETCH] PC:" << pc << " -> " << formatBinary(ram[pc]) << endl;
         pc++;
     }
 
@@ -139,36 +137,28 @@ private:
         cout << "[EXECUTE] ";
         switch (opcode)
         {
-        case 0b0000: // LOAD R1 from [R2]
+        case 0b0000:
             if (reg[reg2] >= 0 && reg[reg2] < MEMORY_SIZE)
             {
                 reg[reg1] = ram[reg[reg2]];
                 cout << "LOAD R" << reg1 << " <- MEM[R" << reg2 << "]";
             }
-            else
-            {
-                cout << "LOAD ERROR: Invalid memory access!";
-            }
             break;
 
-        case 0b0001: // STORE R1 to [R2]
+        case 0b0001:
             if (reg[reg2] >= 0 && reg[reg2] < MEMORY_SIZE)
             {
                 ram[reg[reg2]] = reg[reg1];
                 cout << "STORE R" << reg1 << " -> MEM[R" << reg2 << "]";
             }
-            else
-            {
-                cout << "STORE ERROR: Invalid memory access!";
-            }
             break;
 
-        case 0b1110: // READ from IO to R1
+        case 0b1110:
             reg[reg1] = io.readInput();
             cout << "READ R" << reg1 << " <- IO";
             break;
 
-        case 0b1111: // WRITE R1 to IO
+        case 0b1111:
             io.writeOutput(reg[reg1]);
             cout << "WRITE R" << reg1 << " -> IO";
             break;
@@ -207,21 +197,14 @@ private:
 int main()
 {
     Processor cpu;
-
-    // Fixed Test Program
     vector<int> program = {
-        0b11100000, // READ R0
-        0b11110000, // WRITE R0
-        0b00001100, // LOAD R1 from MEM[4] (corrected instruction)
-        0b00010110, // STORE R1 to MEM[6]
-        HALT_OPCODE // Stop execution
-    };
-
-    // Initialize memory with some test data
-    cpu.ram[4] = 42; // MEM[4] = 42 (test data)
-
+        0b11100000,
+        0b11110000,
+        0b00001100,
+        0b00010110,
+        HALT_OPCODE};
+    cpu.ram[4] = 42;
     cpu.loadProgram(program);
     cpu.startExecution();
-
     return 0;
 }

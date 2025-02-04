@@ -6,19 +6,22 @@
 
 using namespace std;
 
-// ---- Constants ----
+// ---- Constants----
+
 constexpr int REGISTER_COUNT = 8;
 constexpr int MEMORY_SIZE = 256;
 constexpr int WORD_SIZE = 8;            // 8-bit architecture
 constexpr int HALT_OPCODE = 0b11111111; // 0xFF in binary
 
-// ========= Bit manipulation constants =======
+// =========Bit manipulation constants=======
+
 constexpr int OPCODE_SHIFT = 4;
 constexpr int OPCODE_MASK = 0b1111; // 4-bit opcode
 constexpr int REG1_SHIFT = 2;
 constexpr int REG_MASK = 0b11; // 2-bit register selector
 
-// ----- Conversion -----
+// -----conversion-----
+
 string formatBinary(int value, int bits = WORD_SIZE)
 {
     string str;
@@ -29,7 +32,8 @@ string formatBinary(int value, int bits = WORD_SIZE)
     return str;
 }
 
-// ================== I/O Device ===========
+// ==================I/O Device===========
+
 class IOController
 {
     int input_buffer;
@@ -45,6 +49,8 @@ public:
              << " (" << output_buffer << ") written\n";
     }
 
+    // ==========readinput===========
+
     int readInput()
     {
         cout << "Enter 8-bit value (0-255): ";
@@ -59,7 +65,8 @@ public:
     }
 };
 
-// ========== CPU Components ==========
+// ==========CPU Components========
+
 struct Processor
 {
     vector<int> reg; // General-purpose registers
@@ -67,6 +74,7 @@ struct Processor
     IOController io; // I/O subsystem
     int pc;          // Program counter
 
+    // Execution tracking
     size_t instructions_executed;
     chrono::high_resolution_clock::time_point clock_start;
 
@@ -75,13 +83,15 @@ struct Processor
                   pc(0),
                   instructions_executed(0) {}
 
+    // ========== Execution Control ===========
     void loadProgram(const vector<int> &program)
     {
         cout << "\n==== Loading Program ====\n";
         for (size_t addr = 0; addr < program.size() && addr < MEMORY_SIZE; ++addr)
         {
             ram[addr] = program[addr];
-            cout << "MEM[" << addr << "] = " << formatBinary(program[addr]) << "\n";
+            cout << "MEM[" << addr << "] = "
+                 << formatBinary(program[addr]) << "\n";
         }
         cout << "----------------\n";
     }
@@ -107,6 +117,7 @@ struct Processor
     }
 
 private:
+    // ========== Pipeline Stages =============
     void fetch()
     {
         if (pc >= MEMORY_SIZE)
@@ -134,33 +145,20 @@ private:
         instructions_executed++;
     }
 
+    // ========== Instruction Set =============
     void executeInstruction(int opcode, int reg1, int reg2)
     {
         cout << "[EXECUTE] ";
         switch (opcode)
         {
         case 0b0000: // LOAD R1 from [R2]
-            if (reg[reg2] >= 0 && reg[reg2] < MEMORY_SIZE)
-            {
-                reg[reg1] = ram[reg[reg2]];
-                cout << "LOAD R" << reg1 << " <- MEM[R" << reg2 << "]";
-            }
-            else
-            {
-                cout << "LOAD ERROR: Invalid memory access!";
-            }
+            reg[reg1] = ram[reg[reg2]];
+            cout << "LOAD R" << reg1 << " <- MEM[R" << reg2 << "]";
             break;
 
         case 0b0001: // STORE R1 to [R2]
-            if (reg[reg2] >= 0 && reg[reg2] < MEMORY_SIZE)
-            {
-                ram[reg[reg2]] = reg[reg1];
-                cout << "STORE R" << reg1 << " -> MEM[R" << reg2 << "]";
-            }
-            else
-            {
-                cout << "STORE ERROR: Invalid memory access!";
-            }
+            ram[reg[reg2]] = reg[reg1];
+            cout << "STORE R" << reg1 << " -> MEM[R" << reg2 << "]";
             break;
 
         case 0b1110: // READ from IO to R1
@@ -179,12 +177,14 @@ private:
         cout << endl;
     }
 
+    // ========== Debug Helpers ===============
     void dumpRegisters() const
     {
         cout << "--- REGISTERS ---\n";
         for (size_t i = 0; i < REGISTER_COUNT; ++i)
         {
-            cout << "R" << i << ": " << formatBinary(reg[i])
+            cout << "R" << i << ": "
+                 << formatBinary(reg[i])
                  << " (" << setw(3) << reg[i] << ")\n";
         }
     }
@@ -196,29 +196,29 @@ private:
 
         cout << "\n==== Execution Report ====\n"
              << "Instructions executed: " << instructions_executed << "\n"
-             << "Execution Time: " << duration.count() << " Microseconds\n"
+             << "Execution Time: " << duration.count() << " "
+                                                          "Microseconds\n"
              << "Performance: " << fixed << setprecision(2)
              << (double)instructions_executed / duration.count()
-             << " Microseconds\n";
+             << " "
+                "Microseconds\n";
     }
 };
 
-// ========= Main Program =============
+// =========Main Program=============
+
 int main()
 {
     Processor cpu;
 
-    // Fixed Test Program
+    // Sample test program
     vector<int> program = {
         0b11100000, // READ R0
         0b11110000, // WRITE R0
-        0b00001100, // LOAD R1 from MEM[4] (corrected instruction)
-        0b00010110, // STORE R1 to MEM[6]
+        0b00000101, // LOAD R0 from [R1]
+        0b00010110, // STORE R1 to [R2]
         HALT_OPCODE // Stop execution
     };
-
-    // Initialize memory with some test data
-    cpu.ram[4] = 42; // MEM[4] = 42 (test data)
 
     cpu.loadProgram(program);
     cpu.startExecution();
